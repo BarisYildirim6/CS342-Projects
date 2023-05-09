@@ -54,13 +54,13 @@ void *threadfunc1 (void *a)
     rm_claim (claim);
     
     setarray(request1, NUMR, 5);
-    pr (tid, "REQ", NUMR, request1);
+    //pr (tid, "REQ", NUMR, request1);
     rm_request (request1);
 
     sleep(4);
 
     setarray(request2, NUMR, 3);
-    pr (tid, "REQ", NUMR, request2);
+    //pr (tid, "REQ", NUMR, request2);
     rm_request (request2);
 
     rm_release (request1);
