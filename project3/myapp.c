@@ -6,11 +6,11 @@
 #include <stdarg.h>
 #include "rm.h"
 
-#define NUMR 1        // number of resource types
-#define NUMP 2        // number of threads
+#define NUMR 5        // number of resource types
+#define NUMP 3        // number of threads
 
 int AVOID = 1;
-int exist[1] =  {8};  // resources existing in the system
+int exist[5] =  {8, 8, 8, 8, 8};  // resources existing in the system
 
 void pr (int tid, char astr[], int m, int r[])
 {
@@ -50,16 +50,16 @@ void *threadfunc1 (void *a)
     tid = *((int*)a);
     rm_thread_started (tid);
 
-    setarray(claim, NUMR, 8);
+    setarray(claim, NUMR, 8, 8, 8, 8, 8);
     rm_claim (claim);
     
-    setarray(request1, NUMR, 5);
+    setarray(request1, NUMR, 0, 3, 4, 2, 1);
     pr (tid, "REQ", NUMR, request1);
     rm_request (request1);
 
     sleep(4);
 
-    setarray(request2, NUMR, 3);
+    setarray(request2, NUMR, 0, 3, 0, 0, 4);
     pr (tid, "REQ", NUMR, request2);
     rm_request (request2);
 
@@ -81,16 +81,16 @@ void *threadfunc2 (void *a)
     tid = *((int*)a);
     rm_thread_started (tid);
 
-    setarray(claim, NUMR, 8);
+    setarray(claim, NUMR, 8, 8, 8, 8, 8);
     rm_claim (claim);
 
-    setarray(request1, NUMR, 2);
+    setarray(request1, NUMR, 2, 2, 0, 1, 1);
     pr (tid, "REQ", NUMR, request1);
     rm_request (request1);
 
-    sleep(2);
+    sleep(6);
     
-    setarray(request2, NUMR, 4);
+    setarray(request2, NUMR, 1, 1, 1, 4, 2);
     pr (tid, "REQ", NUMR, request2);
     rm_request (request2);
 
@@ -101,6 +101,34 @@ void *threadfunc2 (void *a)
     pthread_exit(NULL);
 }
 
+void *threadfunc3 (void *a)
+{
+    int tid;
+    int request1[MAXR];
+    int request2[MAXR];
+    int claim[MAXR];
+
+    tid = *((int*)a);
+    rm_thread_started (tid);
+
+    setarray(claim, NUMR, 8, 8, 8, 8, 8);
+    rm_claim (claim);
+
+    setarray(request1, NUMR, 3, 1, 2, 3, 4);
+    pr (tid, "REQ", NUMR, request1);
+    rm_request (request1);
+    sleep(2);
+    
+    setarray(request2, NUMR, 10, 2, 1, 0, 0);
+    pr (tid, "REQ", NUMR, request2);
+    rm_request (request2);
+
+    rm_release (request1);
+    rm_release (request2);
+
+    rm_thread_ended ();
+    pthread_exit(NULL);
+}
 
 int main(int argc, char **argv)
 {
@@ -133,9 +161,15 @@ int main(int argc, char **argv)
     pthread_create (&(threadArray[i]), NULL,
                     (void *) threadfunc2, (void *)
                     (void*)&tids[i]);
+    
+    i = 2;  // we select a tid for the thread
+    tids[i] = i;
+    pthread_create (&(threadArray[i]), NULL,
+                    (void *) threadfunc3, (void *)
+                    (void*)&tids[i]);
 
     count = 0;
-    while ( count < 10) {
+    while (count < 20) {
         sleep(1);
         rm_print_state("The current state");
         ret = rm_detection();
@@ -151,5 +185,9 @@ int main(int argc, char **argv)
             pthread_join (threadArray[i], NULL);
             printf ("joined\n");
         }
+    } else {
+        printf("An Error Occured");
     }
 }
+
+
