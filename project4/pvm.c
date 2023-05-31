@@ -6,31 +6,6 @@
 #include <string.h>
 #define PAGE_SIZE 4096
 
-/*void printBinary() {
-    FILE* file = fopen("/proc/kpageflags", "rb"); // Open the file in binary mode
-
-    if (file == NULL) {
-        printf("Failed to open the /proc/kpageflags file.\n");
-        return;
-    }
-
-    unsigned char buffer[ENTRY_SIZE];
-    size_t bytesRead;
-
-    while ((bytesRead = fread(buffer, sizeof(unsigned char), ENTRY_SIZE, file)) > 0) {
-        // Process the buffer here
-        // Interpret the binary data according to the expected format
-
-        // Example: Print the binary data as hexadecimal values
-        for (size_t i = 0; i < bytesRead; i++) {
-            printf("%04X ", buffer[i]);
-        }
-        printf("\n");
-    }
-
-    fclose(file);
-}*/
-
 void printFrameInfo (unsigned long PFN) {
     int fd;
     off_t offset;
@@ -84,7 +59,7 @@ void printFrameInfo (unsigned long PFN) {
 
     close(fd);
 
-    // Print the detailed information (modify as per your desired format)
+    // Detailed information
     printf("Frame Number: 0x%lx\n", PFN);
     printf("Mapping Count: %lu\n", mapping_count);
     printf("Flag Values: 0x%lx\n", entry);
@@ -127,7 +102,7 @@ void printMemUsed(unsigned long PID) {
         exit(1);
     }
 
-    // Variables to store memory usage
+    // Memory usage variables
     unsigned long long totalVirtualMemory = 0;
     unsigned long long physicalMemoryExclusive = 0;
     unsigned long long physicalMemoryAll = 0;
@@ -194,10 +169,11 @@ void printMemUsed(unsigned long PID) {
             // Close /proc/kpagecount file
             close(kpagecountFd);
 
-            // Check if the mapping count is equal to 1
+            // Check if the mapping count is equal to 1 for exclusive memory
             if (mappingCount == 1) {
                 physicalMemoryExclusive += PAGE_SIZE;
             }
+            // Check if the mapping count is equal to or greater than 1 for exclusive memory
             if (mappingCount >= 1) {
                 physicalMemoryAll += PAGE_SIZE;
             }
