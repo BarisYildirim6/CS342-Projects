@@ -4,9 +4,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#define ENTRY_SIZE 4096
+#define PAGE_SIZE 4096
 
-void printBinary() {
+/*void printBinary() {
     FILE* file = fopen("/proc/kpageflags", "rb"); // Open the file in binary mode
 
     if (file == NULL) {
@@ -29,7 +29,7 @@ void printBinary() {
     }
 
     fclose(file);
-}
+}*/
 
 void printFrameInfo (unsigned long PFN) {
     int fd;
@@ -120,7 +120,7 @@ void printFrameInfo (unsigned long PFN) {
 
 void printMemUsed(unsigned long PID) {
     char filename[100];
-    sprintf(filename, "/proc/%d/maps", PID);
+    sprintf(filename, "/proc/%lu/maps", PID);
     FILE *mapsFile = fopen(filename, "r");
     if (mapsFile == NULL) {
         perror("Error opening /proc/PID/maps");
@@ -143,13 +143,10 @@ void printMemUsed(unsigned long PID) {
         unsigned long long size = end - start;
         totalVirtualMemory += size;
 
-        // Calculate the number of pages in the virtual memory area
-        //unsigned long long numPages = size / PAGE_SIZE;
-
         // Check the mapping count for each page in the virtual memory area
         unsigned long long vaddr;
         for (vaddr = start; vaddr < end; vaddr += PAGE_SIZE) {
-            sprintf(filename, "/proc/%d/pagemap", PID);
+            sprintf(filename, "/proc/%lu/pagemap", PID);
             int pagemapFd = open(filename, O_RDONLY);
             if (pagemapFd == -1) {
                 perror("Error opening /proc/PID/pagemap");
@@ -170,6 +167,9 @@ void printMemUsed(unsigned long PID) {
 
             // Extract the page frame number (PFN) from the pagemap entry
             uint64_t pfn = pagemapEntry & 0x7FFFFFFFFFFFFF;
+
+            // Close /proc/PID/pagemap file
+            close(pagemapFd);
 
             // Open the /proc/kpagecount file
             int kpagecountFd = open("/proc/kpagecount", O_RDONLY);
@@ -194,15 +194,13 @@ void printMemUsed(unsigned long PID) {
             // Close /proc/kpagecount file
             close(kpagecountFd);
 
-            // Calculate memory usage based on the mapping count
+            // Check if the mapping count is equal to 1
             if (mappingCount == 1) {
                 physicalMemoryExclusive += PAGE_SIZE;
             }
-
-            physicalMemoryAll += PAGE_SIZE;
-
-            // Close /proc/PID/pagemap file
-            close(pagemapFd);
+            if (mappingCount >= 1) {
+                physicalMemoryAll += PAGE_SIZE;
+            }
         }
     }
 
@@ -215,9 +213,13 @@ void printMemUsed(unsigned long PID) {
 }
 
 int main (int argc, char* argv[]) {
+    if (argc < 3) {
+            printf("Usage: %s [option] [argument]\n", argv[0]);
+        return 1;
+    }
     if (!strcmp(argv[1], "-frameinfo")) {
         if (argc < 3) {
-            printf("Usage: %s -frameinfo <frame_number>\n", argv[0]);
+            printf("Usage: %s -frameinfo [frame_number]\n", argv[0]);
             return 1;
         }
         unsigned long PFN = strtoul(argv[2], NULL, 0);
@@ -225,7 +227,7 @@ int main (int argc, char* argv[]) {
     }
     if (!strcmp(argv[1], "-memused")) {    
         if (argc < 3) {
-            printf("Usage: %s -memused <pid>\n", argv[0]);
+            printf("Usage: %s -memused [pid]\n", argv[0]);
             return 1;
         }
         unsigned long PID = strtoul(argv[2], NULL, 0);
